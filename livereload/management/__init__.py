@@ -1,1 +1,1 @@
-"""Management for django-livereload-server"""
+"""Management for my-livereload-server"""

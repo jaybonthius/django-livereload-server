@@ -1,4 +1,4 @@
-"""Setup script of django-livereload-server"""
+"""Setup script of my-livereload-server"""
 import os.path
 from setuptools import setup
 from setuptools import find_packages
@@ -11,7 +11,7 @@ with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as readme:
 os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
 setup(
-    name='django-livereload-server',
+    name='my-livereload-server',
     version=livereload.__version__,
     packages=find_packages(),
     include_package_data=True,

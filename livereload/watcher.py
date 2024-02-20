@@ -8,6 +8,7 @@
     :license: BSD, see LICENSE for more details.
 """
 
+import fnmatch
 import glob
 import logging
 import os
@@ -19,11 +20,17 @@ try:
 except ImportError:
     pyinotify = None
 
-logger = logging.getLogger('livereload')
+logger = logging.getLogger("livereload")
+
+
+def matches_glob(path, glob_pattern):
+    processed_pattern = glob_pattern.replace("/**/", "*/")
+    return fnmatch.fnmatchcase(path, processed_pattern)
 
 
 class Watcher:
     """A file watcher registry."""
+
     def __init__(self):
         self._tasks = {}
 
@@ -40,10 +47,12 @@ class Watcher:
         self._start = time.time()
 
         # list of ignored dirs
-        self.ignored_dirs = ['.git', '.hg', '.svn', '.cvs']
+        self.ignored_dirs = [".git", ".hg", ".svn", ".cvs"]
 
         # ignored file extensions
-        self.ignored_file_extensions = ['.pyc', '.pyo', '.o', '.swp']
+        self.ignored_file_extensions = [".pyc", ".pyo", ".o", ".swp"]
+
+        self.ignore_patterns = ["pollen_src/**/compiled/*"]
 
     def ignore_dirs(self, *args):
         self.ignored_dirs.extend(args)
@@ -56,6 +65,13 @@ class Watcher:
         """Should ignore a given filename?"""
         _, ext = os.path.splitext(filename)
         return ext in self.ignored_file_extensions
+
+    def should_ignore_by_glob(self, path):
+        """Check if the given path matches any of the ignore patterns."""
+        for pattern in self.ignore_patterns:
+            if matches_glob(path, pattern):
+                return True
+        return False
 
     def ignore_file_extension(self, extension):
         self.ignored_file_extensions.append(extension)
@@ -72,10 +88,10 @@ class Watcher:
                        filepath.
         """
         self._tasks[path] = {
-            'func': func,
-            'delay': delay,
-            'ignore': ignore,
-            'mtimes': {},
+            "func": func,
+            "delay": delay,
+            "ignore": ignore,
+            "mtimes": {},
         }
 
     def start(self, callback):
@@ -96,20 +112,21 @@ class Watcher:
         delays = set()
         for path in self._tasks:
             item = self._tasks[path]
-            self._task_mtimes = item['mtimes']
-            changed = self.is_changed(path, item['ignore'])
+            self._task_mtimes = item["mtimes"]
+            changed = self.is_changed(path, item["ignore"])
             if changed:
-                func = item['func']
-                delay = item['delay']
+                func = item["func"]
+                delay = item["delay"]
                 if delay and isinstance(delay, float):
                     delays.add(delay)
                 if func:
-                    name = getattr(func, 'name', None)
+                    name = getattr(func, "name", None)
                     if not name:
-                        name = getattr(func, '__name__', 'anonymous')
-                    logger.info(
-                        f"Running task: {name} (delay: {delay})")
-                    if len(signature(func).parameters) > 0 and isinstance(changed, list):
+                        name = getattr(func, "__name__", "anonymous")
+                    logger.info(f"Running task: {name} (delay: {delay})")
+                    if len(signature(func).parameters) > 0 and isinstance(
+                        changed, list
+                    ):
                         func(changed)
                     else:
                         func()
@@ -173,6 +190,10 @@ class Watcher:
         if self.should_ignore(path):
             return False
 
+        if self.should_ignore_by_glob(path):
+            # logger.info(f"Ignoring glob: {path}")
+            return False
+
         if ignore and ignore(path):
             return False
 
@@ -206,7 +227,7 @@ class Watcher:
 
     def get_changed_glob_files(self, path, ignore=None):
         """Check if glob path has any changed filepaths."""
-        try:        
+        try:
             files = glob.glob(path, recursive=True)
             changed_files = [f for f in files if self.is_file_changed(f, ignore)]
         except TypeError:
@@ -240,15 +261,15 @@ class INotifyWatcher(Watcher):
             self.callback = callback
 
             from tornado import ioloop
+
             self.notifier = pyinotify.TornadoAsyncNotifier(
-                self.wm, ioloop.IOLoop.instance(),
-                default_proc_fun=self.inotify_event
+                self.wm, ioloop.IOLoop.instance(), default_proc_fun=self.inotify_event
             )
             callback()
         return True
 
 
 def get_watcher_class():
-    if pyinotify is None or not hasattr(pyinotify, 'TornadoAsyncNotifier'):
+    if pyinotify is None or not hasattr(pyinotify, "TornadoAsyncNotifier"):
         return Watcher
     return INotifyWatcher

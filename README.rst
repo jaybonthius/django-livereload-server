@@ -1,5 +1,5 @@
 ========================
-django-livereload-server
+my-livereload-server
 ========================
 
 This django app adds a management command that starts a livereload server watching all your static files and templates as well
@@ -10,7 +10,7 @@ Installation
 
 Install package: ::
 
-  $ pip install django-livereload-server
+  $ pip install my-livereload-server
 
 Add ``'livereload'`` to the ``INSTALLED_APPS``, before ``'django.contrib.staticfiles'`` if this is used::
 

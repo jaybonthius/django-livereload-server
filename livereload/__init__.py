@@ -5,7 +5,7 @@ __license__ = 'BSD License'
 __author__ = 'Tomas Walch'
 __email__ = 'tomaswalch@gmail.com'
 
-__url__ = 'https://github.com/tjwalch/django-livereload-server'
+__url__ = 'https://github.com/tjwalch/my-livereload-server'
 
 
 def livereload_port():
